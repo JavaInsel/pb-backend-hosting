@@ -1,7 +1,8 @@
-
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const app = express()
+const Person = require('./models/person')
 app.use(express.json())
 app.use(express.static('dist'))
 
@@ -31,51 +32,58 @@ const generateId = ()=>{
 }
 
 
-var persons = [
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
 
-//get all persons
-app.get('/api/persons',(req,res)=>{
-    res.json(persons)
+
+// var persons = [
+//     { 
+//       "id": 1,
+//       "name": "Arto Hellas", 
+//       "number": "040-123456"
+//     },
+//     { 
+//       "id": 2,
+//       "name": "Ada Lovelace", 
+//       "number": "39-44-5323523"
+//     },
+//     { 
+//       "id": 3,
+//       "name": "Dan Abramov", 
+//       "number": "12-43-234345"
+//     },
+//     { 
+//       "id": 4,
+//       "name": "Mary Poppendieck", 
+//       "number": "39-23-6423122"
+//     }
+// ]
+
+
+//get all people
+app.get('/api/person',(req,res)=>{
+    //res.json(persons)
+    Person.find({}).then(person=>{
+      res.json(person)
+    })
+    console.log('persons',persons)
 })
 
 //get one person
-app.get('/api/persons/:id',(req,res)=>{
-  const id = Number(req.params.id)
-  const person = persons.find(person=>person.id === id)
-  if(person)
-  {
-    res.json(person)
-  }
-  else
-  {
-    res.status(204).end()
-  }
+app.get('/api/person/:id',(req,res)=>{
+  const id = req.params.id
+  console.log(typeof(id))
+  Person.findById(id)
+    .then(person=>{
+      console.log('Result:',person)
+      res.json(person)
+    })
+    .catch(error=>{
+      res.status(404).send({message:"Person doesn't exist"})
+    })
   
 })
 
 //add person
-app.post('/api/persons',(req,res)=>{
+app.post('/api/person',(req,res)=>{
   const reqPayload = req.body
 
   if(!reqPayload)
@@ -85,18 +93,18 @@ app.post('/api/persons',(req,res)=>{
     })
   }
 
-  const existingPerson = persons.find(person=>{
-    return(
-      person.name === reqPayload.name
-      ) })
+  // const existingPerson = persons.find(person=>{
+  //   return(
+  //     person.name === reqPayload.name
+  //     ) })
   
 
 
-  if(existingPerson)
-  {
+  // if(existingPerson)
+  // {
     
-    return res.status(400).json({ error: 'name must be unique' })
-  }
+  //   return res.status(400).json({ error: 'name must be unique' })
+  // }
 
   console.log(reqPayload.number)
   if(reqPayload.number === undefined || reqPayload.name === undefined)
@@ -105,38 +113,48 @@ app.post('/api/persons',(req,res)=>{
 
   }
   
-  const person = {
-    id:generateId(),
+  const person = new Person({
     name:reqPayload.name,
     number:reqPayload.number
-  }
+  })
   console.log('new person:',person)
 
-  persons = persons.concat(person)
-  console.log('new list:',persons)
+  // persons = persons.concat(person)
+  // console.log('new list:',persons)
 
-  res.json(persons)
+  person.save().then(savedPerson=>{
+    console.log(`${savedPerson.name} saved!`)
+    res.json(savedPerson)
+  })
 
 })
 
 //delete person
-app.delete('/api/persons/:id',(req,res)=>{
-  const id = Number(req.params.id)
-  const lengthBefore = persons.length
-  console.log("before:",persons,'length:',lengthBefore)
-  persons = persons.filter(person => person.id != id)
-  const lengthAfter = persons.length
-  console.log("after:",persons,'length:',lengthAfter)
-  if(lengthAfter!=lengthBefore)
-  {
-    res.statusMessage = `Person with id:${id} has been deleted`
-    res.status(204).end()
-  }
-  else
-  {
-    res.statusMessage = 'Id not found!'
-    res.status(204).end()
-  }
+app.delete('/api/person/:id',(req,res)=>{
+  const id = req.params.id
+  // const lengthBefore = persons.length
+  // console.log("before:",persons,'length:',lengthBefore)
+  // persons = persons.filter(person => person.id != id)
+  // const lengthAfter = persons.length
+  // console.log("after:",persons,'length:',lengthAfter)
+  // if(lengthAfter!=lengthBefore)
+  // {
+  //   res.statusMessage = `Person with id:${id} has been deleted`
+  //   res.status(204).end()
+  // }
+  // else
+  // {
+  //   res.statusMessage = 'Id not found!'
+  //   res.status(204).end()
+  // }
+  Person.findByIdAndDelete(id).then(person=>{
+    console.log(person,"is removed from DB")
+    res.json(person)
+  })
+  .catch(error=>{
+    console.log("Error:",error)
+    res.status(404).send({message:"Deletion failed"})
+  })
   
 })
 
