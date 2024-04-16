@@ -64,7 +64,7 @@ app.get('/api/person',(req,res)=>{
     Person.find({}).then(person=>{
       res.json(person)
     })
-    console.log('persons',persons)
+
 })
 
 //get one person
