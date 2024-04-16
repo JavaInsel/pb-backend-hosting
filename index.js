@@ -59,7 +59,7 @@ const generateId = ()=>{
 
 
 //get all people
-app.get('/api/person',(req,res)=>{
+app.get('/api/persons',(req,res)=>{
     //res.json(persons)
     Person.find({}).then(person=>{
       res.json(person)
@@ -68,7 +68,7 @@ app.get('/api/person',(req,res)=>{
 })
 
 //get one person
-app.get('/api/person/:id',(req,res)=>{
+app.get('/api/persons/:id',(req,res)=>{
   const id = req.params.id
   console.log(typeof(id))
   Person.findById(id)
@@ -83,7 +83,7 @@ app.get('/api/person/:id',(req,res)=>{
 })
 
 //add person
-app.post('/api/person',(req,res)=>{
+app.post('/api/persons',(req,res)=>{
   const reqPayload = req.body
 
   if(!reqPayload)
@@ -130,7 +130,7 @@ app.post('/api/person',(req,res)=>{
 })
 
 //delete person
-app.delete('/api/person/:id',(req,res)=>{
+app.delete('/api/persons/:id',(req,res)=>{
   const id = req.params.id
   // const lengthBefore = persons.length
   // console.log("before:",persons,'length:',lengthBefore)
