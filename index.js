@@ -9,6 +9,15 @@ const cors = require('cors')
 
 app.use(cors())
 
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
@@ -71,16 +80,25 @@ app.get('/api/persons',(req,res)=>{
 })
 
 //get one person
-app.get('/api/persons/:id',(req,res)=>{
+app.get('/api/persons/:id',(req,res,next)=>{
   const id = req.params.id
   console.log(typeof(id))
   Person.findById(id)
     .then(person=>{
       console.log('Result:',person)
-      res.json(person)
+      if(person)
+      {
+        res.json(person)
+      }else
+      {
+        res.status(404).send("Id does not exist!")
+      }
+      
+      
     })
     .catch(error=>{
-      res.status(404).send({message:"Person doesn't exist"})
+
+      next(error)
     })
   
 })
@@ -132,6 +150,36 @@ app.post('/api/persons',(req,res)=>{
 
 })
 
+ //update person
+ app.put('/api/persons/:id',(req,res,next)=>{
+  const reqPayload = req.body
+  const id = req.params.id
+  console.log('Person id:',id)
+  if(!reqPayload)
+  {
+    return res.status(404).json({
+      error:'Content missing!'
+    })
+  }
+  
+  console.log(reqPayload.number)
+  if(reqPayload.number === undefined || reqPayload.name === undefined)
+  {
+    return res.status(400).json({ error: 'name or number must be provided' })
+
+  }
+
+  const person = {
+    name:reqPayload.name,
+    number:reqPayload.number
+  }
+  console.log('new person:',person)
+
+  Person.findByIdAndUpdate(id,person,{new:true})
+        .then(updatedPerson => res.json(updatedPerson))
+        .catch(error => next(error))
+})
+
 //delete person
 app.delete('/api/persons/:id',(req,res)=>{
   const id = req.params.id
@@ -164,12 +212,16 @@ app.delete('/api/persons/:id',(req,res)=>{
 
 //get info
 app.get('/api/info',(req,res)=>{
-    res.send(`<p>Phonebook has info for ${persons.length} people <br/> <br/> ${new Date()}</p>`)
+  Person.countDocuments({})
+        .then(count=>{
+          res.send(`<p>Phonebook has info for ${count} people <br/> <br/> ${new Date()}</p>`)
+        })
+ 
 })
 
 
 app.use(unknownEndpoint)
-
+app.use(errorHandler)
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)

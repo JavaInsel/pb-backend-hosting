@@ -1,0 +1,8 @@
+PUT http://localhost:3001/api/persons/661ed37bcdf4ed26529dbdff
+content-type: application/json
+
+{
+    "name": "Irina Shayk",
+    "number":"021-5529897"
+   
+}
