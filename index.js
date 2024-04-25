@@ -10,13 +10,13 @@ const cors = require('cors')
 app.use(cors())
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
-
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  } 
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).send({ error: error.message })
+  }
 
-  next(error)
+ next(error)
 }
 
 const unknownEndpoint = (request, response) => {
@@ -42,32 +42,6 @@ app.use(morgan(function (tokens, req, res) {
 const generateId = ()=>{
   return Math.floor(Math.random()*1000000)
 }
-
-
-
-
-// var persons = [
-//     { 
-//       "id": 1,
-//       "name": "Arto Hellas", 
-//       "number": "040-123456"
-//     },
-//     { 
-//       "id": 2,
-//       "name": "Ada Lovelace", 
-//       "number": "39-44-5323523"
-//     },
-//     { 
-//       "id": 3,
-//       "name": "Dan Abramov", 
-//       "number": "12-43-234345"
-//     },
-//     { 
-//       "id": 4,
-//       "name": "Mary Poppendieck", 
-//       "number": "39-23-6423122"
-//     }
-// ]
 
 
 //get all people
@@ -104,7 +78,7 @@ app.get('/api/persons/:id',(req,res,next)=>{
 })
 
 //add person
-app.post('/api/persons',(req,res)=>{
+app.post('/api/persons',(req,res,next)=>{
   const reqPayload = req.body
 
   if(!reqPayload)
@@ -114,24 +88,10 @@ app.post('/api/persons',(req,res)=>{
     })
   }
 
-  // const existingPerson = persons.find(person=>{
-  //   return(
-  //     person.name === reqPayload.name
-  //     ) })
-  
-
-
-  // if(existingPerson)
-  // {
-    
-  //   return res.status(400).json({ error: 'name must be unique' })
-  // }
-
   console.log(reqPayload.number)
   if(reqPayload.number === undefined || reqPayload.name === undefined)
   {
     return res.status(400).json({ error: 'name or number must be provided' })
-
   }
   
   const person = new Person({
@@ -143,10 +103,14 @@ app.post('/api/persons',(req,res)=>{
   // persons = persons.concat(person)
   // console.log('new list:',persons)
 
-  person.save().then(savedPerson=>{
-    console.log(`${savedPerson.name} saved!`)
-    res.json(savedPerson)
-  })
+  person.save()
+        .then(savedPerson=>{
+              console.log(`${savedPerson.name} saved!`)
+              res.json(savedPerson)})
+        .catch(error=>{
+          console.log(error)
+          next(error)
+        })
 
 })
 
@@ -175,7 +139,7 @@ app.post('/api/persons',(req,res)=>{
   }
   console.log('new person:',person)
 
-  Person.findByIdAndUpdate(id,person,{new:true})
+  Person.findByIdAndUpdate(id,person,{new:true, runValidators: true, context: 'query'})
         .then(updatedPerson => res.json(updatedPerson))
         .catch(error => next(error))
 })
@@ -183,21 +147,7 @@ app.post('/api/persons',(req,res)=>{
 //delete person
 app.delete('/api/persons/:id',(req,res)=>{
   const id = req.params.id
-  // const lengthBefore = persons.length
-  // console.log("before:",persons,'length:',lengthBefore)
-  // persons = persons.filter(person => person.id != id)
-  // const lengthAfter = persons.length
-  // console.log("after:",persons,'length:',lengthAfter)
-  // if(lengthAfter!=lengthBefore)
-  // {
-  //   res.statusMessage = `Person with id:${id} has been deleted`
-  //   res.status(204).end()
-  // }
-  // else
-  // {
-  //   res.statusMessage = 'Id not found!'
-  //   res.status(204).end()
-  // }
+
   Person.findByIdAndDelete(id).then(person=>{
     console.log(person,"is removed from DB")
     res.json(person)
